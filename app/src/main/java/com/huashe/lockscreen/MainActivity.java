@@ -590,6 +590,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (!toApplyList.isEmpty()){
             ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
         }
+        ///hahah
     }
 
 
