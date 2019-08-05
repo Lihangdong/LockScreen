@@ -21,5 +21,8 @@ public class CONSTANTS {
 
 
 
+      public final static String CodeRequestUrl="http://192.168.12.52:8080/confirm.html";
+
+
 
 }

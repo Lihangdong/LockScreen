@@ -21,14 +21,14 @@ public interface AppVersionService {
 
     @Headers({"Content-type:application/json;charset=utf-8","Accept:application/json"})
     @POST("smscodevalid")
-    Observable<Object> checkRequestCode(@Query("imei") String imei,@Query("code") String code);
+    Observable<Object> checkRequestCode(@Query("type") String type,@Query("deviceId") String deviceId,@Query("code") String code);
 
 
     /***
      * */
     @Headers({"Content-type:application/json;charset=utf-8","Accept:application/json"})
     @POST("smscodeupdate")
-    Observable<Object> updateUseRecords(@Query("imei") String imei,@Query("code") String code);
+    Observable<Object> updateUseRecords(@Query("type") String type,@Query("deviceId") String imei,@Query("code") String code);
 
 
 

@@ -36,6 +36,7 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.huashe.lockscreen.View.LockUtil;
+import com.huashe.lockscreen.network.CONSTANTS;
 import com.huashe.lockscreen.network.RetrofitHelper;
 import com.huashe.lockscreen.service.WhiteService;
 import com.huashe.lockscreen.test.CircleBarView;
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     TelephonyManager  phone;
     String IMEI; //平板的imei
     ImageView qrcodeImg;// 请求二维码
-    String currentCode;// 当前解锁使用的解锁码
+    String currentCode="currentCode";// 当前解锁使用的解锁码
     String IsGrant="isgrant";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -443,7 +444,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if(IMEI!=null&&IMEI.length()>0){
             encryptImei= AESCipher.encrypt(IMEI);
-            String url="http://192.168.12.52:8080/confirm.html"+"?imei="+encryptImei;
+            String url= CONSTANTS.CodeRequestUrl +"?deviceId="+encryptImei;
 
             Bitmap bitmap= QRCodeUtil.createQRCodeBitmap(url,480,480);
             qrcodeImg.setImageBitmap(bitmap);
@@ -462,7 +463,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
         final Gson gson=new Gson();
-        RetrofitHelper.getHttpAPITest().checkRequestCode(encryptImei,inputCode)
+        RetrofitHelper.getHttpAPITest().checkRequestCode("0",encryptImei,inputCode)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<Object>() {
@@ -478,7 +479,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 Log.i(TAG,"解锁成功");
                                 inputPassword_edt.setText("");
                                 time.start();
-                                currentCode=inputCode;
+                                SPUtils.put(MainActivity.this,currentCode,inputCode);
                             }else{
                                 Toast.makeText(MainActivity.this, "验证码有误", Toast.LENGTH_SHORT).show();
                             }
@@ -510,8 +511,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void updateUseRecords(){
 
         final Gson gson=new Gson();
-
-        RetrofitHelper.getHttpAPITest().updateUseRecords(encryptImei,currentCode)
+        String CurCode=SPUtils.get(this,currentCode,"").toString();
+        RetrofitHelper.getHttpAPITest().updateUseRecords("0",encryptImei,CurCode)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<Object>() {
