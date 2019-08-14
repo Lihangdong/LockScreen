@@ -40,5 +40,7 @@ dependencies {
     /** 支持Gson解析         **/
     implementation 'com.squareup.retrofit2:converter-gson:2.5.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.1'
+
+    //这个是二维码生成时使用的库
     implementation files('libs/core-3.3.3.jar')
 }
