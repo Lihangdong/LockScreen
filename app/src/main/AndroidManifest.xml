@@ -37,11 +37,13 @@
 
 
 
-        <!--这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"-->
+        <!--这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"
+        锁屏需要程序不易被杀死，可以先设置一个版本添加进白名单，然后用一个在最近任务列表中隐藏版本的apk进行覆盖。
+        -->
         <activity
             android:name=".MainActivity"
             android:label="锁屏ing"
-
+            android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustPan"
             android:launchMode="singleTask">
