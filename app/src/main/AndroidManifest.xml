@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 声明接收启动完成广播的权限 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!--
   录音权限
       <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -31,8 +34,8 @@
 
         </activity>
         <!--
-这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"
-        锁屏需要程序不易被杀死，可以先设置一个版本添加进白名单，然后用一个在最近任务列表中隐藏版本的apk进行覆盖。
+           这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"
+           锁屏需要程序不易被杀死，可以先设置一个版本添加进白名单，然后用一个在最近任务列表中隐藏版本的apk进行覆盖。
         -->
         <activity
             android:name=".MainActivity"
@@ -54,6 +57,18 @@
             android:enabled="true"
             android:exported="false"
             android:process=":white" />
+
+
+        <!--自启动广播接收-->
+        <receiver
+            android:name=".bootcompletereceiver.BootCompleteReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <!-- .接收启动完成的广播 -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
 
 
