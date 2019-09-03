@@ -148,7 +148,6 @@ public class TestActivity extends AppCompatActivity {
 
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-                    // TODO Auto-generated method stub
                     mp.setLooping(false);//设置视频重复播放
                 }
             });

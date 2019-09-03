@@ -429,7 +429,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-                    // TODO Auto-generated method stub
                     mp.setLooping(false);//设置视频重复播放
                 }
             });
