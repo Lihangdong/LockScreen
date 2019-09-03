@@ -54,7 +54,11 @@
             android:hint="请输入解锁码"
             android:gravity="center"
             android:singleLine="true"
-            android:background="@null"/>
+            android:inputType="number"
+            android:maxLength="6"
+            android:textColor="@color/progress_color"
+            android:background="@null"
+            android:textCursorDrawable="@null" />
 
         <Button
             android:id="@+id/unlock_btn"

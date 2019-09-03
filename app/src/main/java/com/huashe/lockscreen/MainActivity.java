@@ -233,6 +233,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //注释为测试时候使用 TODO 去掉测试代码
                 isLock=false;
                 moveTaskToBack(false);
+                time.cancel();
                 time.start();
 
                 break;
@@ -599,6 +600,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 moveTaskToBack(false);
                                 Log.i(TAG,"解锁成功");
                                 inputPassword_edt.setText("");
+                                time.cancel();
                                 time.start();
                                 SPUtils.put(MainActivity.this,currentCode,inputCode);
                             }else{
