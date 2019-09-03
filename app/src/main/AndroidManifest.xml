@@ -5,21 +5,16 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- <user-permission android:name="android.permission.DEVICE_POWER"/> -->
     <uses-permission android:name="android.permission.USES_POLICY_FORCE_LOCK" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.STOP_APP_SWITCHES" />
 
-    <uses-permission android:name="android.permission.STOP_APP_SWITCHES"/>
-
-    <!--
-    内存读写
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />-->
-    <!--<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!--  录音权限
-      <uses-permission android:name="android.permission.RECORD_AUDIO" />-->
+    <!--
+  录音权限
+      <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-
-    <!--读取联系人
-    <uses-permission android:name="android.permission.READ_CONTACTS" />-->
 
     <application
         android:name=".BaseApplication"
@@ -30,23 +25,21 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".test.TestActivity"
+        <activity
+            android:name=".test.TestActivity"
             android:launchMode="singleTask">
 
         </activity>
-
-
-
-        <!--这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"
+        <!--
+这里的excludeFromRecents设置成true可以不在任务列表中显示 android:excludeFromRecents="true"
         锁屏需要程序不易被杀死，可以先设置一个版本添加进白名单，然后用一个在最近任务列表中隐藏版本的apk进行覆盖。
         -->
         <activity
             android:name=".MainActivity"
             android:label="锁屏ing"
-            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
             android:screenOrientation="landscape"
-            android:windowSoftInputMode="adjustPan"
-            android:launchMode="singleTask">
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -54,18 +47,16 @@
             </intent-filter>
         </activity>
 
-
-
-
-        <service android:name=".service.WhiteService"
+        <!--这个添加通知栏的服务用于提升优先级-->
+        <service
+            android:name=".service.WhiteService"
             android:enabled="true"
             android:exported="false"
             android:process=":white" />
 
 
 
-
-        <!--这个是熄屏，亮屏需要的配置-->
+        <!-- 这个是熄屏，亮屏需要的配置 -->
         <receiver
             android:name=".View.ScreenOffAdminReceiver"
             android:label="@string/app_name"
@@ -78,7 +69,6 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
-
     </application>
 
 </manifest>

@@ -3,38 +3,27 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="center_horizontal"
     tools:context=".test.TestActivity">
 
     <Button
-        android:id="@+id/style1"
-        android:text="样式1"
+        android:id="@+id/qiehuan_btn"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-
-    <Button
-        android:id="@+id/style2"
-        android:text="样式2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:id="@+id/valueString"
-        android:layout_width="wrap_content"
         android:layout_height="50dp" />
 
-
-    <com.huashe.lockscreen.test.CircleBarView
-        android:id="@+id/circle_view"
-        app:start_angle="135"
-        app:sweep_angle="270"
-        app:progress_color="@color/progress_color"
-        app:bg_color="@color/gray"
-        app:bar_width="40dp"
+    <VideoView
+        android:id="@+id/videoView_one"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </android.support.v7.widget.RecyclerView>
 
 </LinearLayout>

@@ -43,4 +43,10 @@ dependencies {
 
     //这个是二维码生成时使用的库
     implementation files('libs/core-3.3.3.jar')
+
+
+    // 视频播放
+    implementation 'com.github.danylovolokh:video-player-manager:0.2.0'
+    implementation 'com.github.danylovolokh:list-visibility-utils:0.2.0'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
 }

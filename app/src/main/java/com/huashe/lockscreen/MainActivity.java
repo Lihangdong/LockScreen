@@ -13,8 +13,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -23,9 +26,9 @@ import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -43,13 +46,12 @@ import com.huashe.lockscreen.test.CircleBarView;
 import com.huashe.lockscreen.util.AESCipher;
 import com.huashe.lockscreen.util.QRCodeUtil;
 import com.huashe.lockscreen.util.SPUtils;
-import com.youth.banner.Banner;
-import com.youth.banner.BannerConfig;
-import com.youth.banner.Transformer;
+import com.huashe.lockscreen.video.MVideoView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +67,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText inputPassword_edt;
     LockUtil lockUtil;
     boolean isLock=true; //默认锁住了
-    Banner mBanner;
     Dialog dialog; //倒计时询问框
     String encryptImei;
     TelephonyManager  phone;
@@ -73,12 +74,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ImageView qrcodeImg;// 请求二维码
     String currentCode="currentCode";// 当前解锁使用的解锁码
     String IsGrant="isgrant";
+
+    //视频使用属性
+    List<String> videoList;
+    MVideoView mVideoView;
+    //手指按下的点为(x1, y1)手指离开屏幕的点为(x2, y2)
+    float x1 = 0;
+    float x2 = 0;
+    float y1 = 0;
+    float y2 = 0;
+    int CurrentVideoPosition=0; //初始播放视频序号
+    //加载本地视频
+    String path=  Environment.getExternalStorageDirectory().getPath()+"/pic";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);//隐藏标题
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);//设置全屏
 
 
         //锁屏外悬浮
@@ -115,7 +125,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startService(whiteIntent);
         initView();
         makeQrCode();//生成二维码
-        initBanner();
+        LoadViewFiles();
+
 
     }
 
@@ -129,11 +140,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //实例化控件
         LockScreenBtn= findViewById(R.id.lockScreen_btn);
         unlockBtn= findViewById(R.id.unlock_btn);
-        mBanner= findViewById(R.id.banner);
         qrcodeImg =findViewById(R.id.qrcode_img);
 
         inputPassword_edt=findViewById(R.id.inputPassword_edt);
-
 
         LockScreenBtn.setOnClickListener(this);
         unlockBtn.setOnClickListener(this);
@@ -145,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
+    //广播监听
     IntentFilter filter;
     private void initFilter() {
         if(filter==null){
@@ -207,33 +216,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if(inputPassword_edt!=null){
-            inputPassword_edt.clearFocus();
-        }
-        Log.i("eee","执行了onPause");
-//        if(isLock){
-////            onStartActivity();
-////            Log.i("eee","执行了onPause中Activity");
-//
-//        }
 
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        Log.i("eee","执行了destroy");
-        if(mBatInfoReceiver!=null){
-            unregisterReceiver(mBatInfoReceiver);
-        }
-        if(lockUtil!=null){
-            lockUtil.destroy();
-        }
-        super.onDestroy();
-    }
 
     @Override
     public void onClick(View v) {
@@ -243,7 +226,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.unlock_btn:
+
                 checkRequestCode();
+                //注释为测试时候使用
+//                isLock=false;
+//                moveTaskToBack(false);
+
                 break;
             default:
                 break;
@@ -270,10 +258,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(inputPassword_edt!=null){
+            inputPassword_edt.clearFocus();
+        }
+        Log.i("eee","执行了onPause");
+//        if(isLock){
+////            onStartActivity();
+////            Log.i("eee","执行了onPause中Activity");
+//
+//        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if(mVideoView!=null){
+            mVideoView.stopPlayback();
+            Log.i("eeeTestActivity","stopPlayback");
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Log.i("eeeTestActivity","onNewIntent");
+        LoadViewFiles();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.i("eee","执行了destroy");
+        if(mBatInfoReceiver!=null){
+            unregisterReceiver(mBatInfoReceiver);
+        }
+        if(lockUtil!=null){
+            lockUtil.destroy();
+        }
+        if(mVideoView!=null){
+            mVideoView.stopPlayback();
+        }
+        super.onDestroy();
+    }
+
     @Override  //这里对返回键进行屏蔽
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode==KeyEvent.KEYCODE_HOME||keyCode==KeyEvent.KEYCODE_BACK){
-            Log.i("eee","按了返回键");
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -301,51 +333,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return false;
     }
 
-    List defaultImages;
-
-    // 这是初始化bannner
-    public void initBanner() {
 
 
-        defaultImages = new ArrayList<>();
-        //   defaultTitles=new ArrayList<>();
-
-        defaultImages.add(R.drawable.img1);
-        defaultImages.add(R.drawable.img2);
-
-
-        //设置内置样式，共有六种可以点入方法内逐一体验使用。
-        mBanner.setBannerStyle(BannerConfig.NOT_INDICATOR);
-        //设置图片加载器，图片加载器在下方
-        mBanner.setImageLoader(new MyLoader());
-
-        mBanner.setImages(defaultImages);
-
-        //设置轮播的动画效果，内含多种特效，可点入方法内查找后内逐一体验
-        mBanner.setBannerAnimation(Transformer.Default);
-
-        //设置轮播间隔时间
-        mBanner.setDelayTime(5000);
-        //设置是否为自动轮播，默认是“是”。
-        mBanner.isAutoPlay(true);
-
-        //设置指示器的位置，小点点，左中右。
-        mBanner.setIndicatorGravity(BannerConfig.CENTER)
-                //以上内容都可写成链式布局，这是轮播图的监听。比较重要。方法在下面。
-                //  .setOnBannerListener(MainActivity.this)
-
-                //必须最后调用的方法，启动轮播图。
-                .start();
-
-    }
-
-
-
-
+    //<editor-fold desc="#操作询问#">
     //TODO 这里设置掉起锁屏时间。
     TimeCount time = new TimeCount(1*60 * 1000, 1000);
 
-    //打印完毕之后倒计时
     class TimeCount extends CountDownTimer {
 
         //构造发方法
@@ -364,9 +357,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
     }
-
-
-
+    /**询问dialog
+     * **/
     public void QueryDialog(){
 
         View dialogView=getLayoutInflater().inflate(R.layout.dialog_query_layout,null);
@@ -423,10 +415,123 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
     }
+    //</editor-fold>
+
+    //<editor-fold desc="#视频加载控制#">
+    //初始化视频控件
+    public void initVideoView(){
+
+        if(mVideoView==null){
+            mVideoView= findViewById(R.id.videoView_one);
+            mVideoView.setVideoURI(Uri.parse(videoList.get(0)));
+            mVideoView.requestFocus();
+            mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    // TODO Auto-generated method stub
+                    mp.setLooping(false);//设置视频重复播放
+                }
+            });
+            mVideoView.start();//播放视频
+            mVideoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    turnNextVideo("down");
+                }
+            });
+
+            mVideoView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+
+                    //继承了Activity的onTouchEvent方法，直接监听点击事件
+                    if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                        //当手指按下的时候
+                        x1 = event.getX();
+                        y1 = event.getY();
+                    }
+                    if(event.getAction() == MotionEvent.ACTION_UP) {
+                        //当手指离开的时候
+                        x2 = event.getX();
+                        y2 = event.getY();
+                        if((x1 - x2 > 50)||(y1 - y2 > 50)) {
+                            Log.i("eee","执行了一次向左滑动");
+                            turnNextVideo("down");
+                        } else if((x2 - x1 > 50)||(y2 - y1 > 50)) {
+                            Log.i("eee","执行了一次向右滑动");
+                            turnNextVideo("up");
+                        }
+                    }
+                    return true;
+                }
+            });
 
 
+//        MediaController medis=new MediaController(this);//显示控制条
+//        videoView.setMediaController(medis);
+//        medis.setMediaPlayer(videoView);//设置控制的对象
+//        medis.show();
+
+        }else{
+            mVideoView.start();//播放视频
+        }
+
+    }
+
+    //播放上一个或下一个视频
+    private  void turnNextVideo(String upOrDown){
+        //第一个视频不能继续往上翻视频
+        if((CurrentVideoPosition-1<0&&upOrDown.equals("up"))){
+            return;
+        }
+
+        //最后一个视频往下翻时自动跳到第一个视频
+        if((CurrentVideoPosition+1==videoList.size()&&upOrDown.equals("down"))){
+            CurrentVideoPosition=0;
+            mVideoView.setVideoPath(videoList.get(CurrentVideoPosition));
+
+        }else if(upOrDown.equals("down")){
+            mVideoView.setVideoPath(videoList.get(CurrentVideoPosition+1));
+            CurrentVideoPosition++;
+        }else{
+            mVideoView.setVideoPath(videoList.get(CurrentVideoPosition-1));
+            CurrentVideoPosition--;
+        }
+        mVideoView.start();
+
+    }
 
 
+    //从本地读取视频
+    private void LoadViewFiles(){
+        if(videoList==null){
+            videoList=new ArrayList<>();
+        }else{
+            videoList.clear();
+        }
+        File file = new File(path);
+        if (file.exists()) {
+            File[] listFiles = file.listFiles();
+
+            if(listFiles.length==0){
+                Toast.makeText(this, "请添加宣传视频", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            for (File file1 : listFiles) {
+                videoList.add(file1.toString());
+            }
+            initVideoView();
+
+        }else{
+            file.mkdir();
+            Toast.makeText(this, "请添加宣传视频", Toast.LENGTH_SHORT).show();
+        }
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="#网络请求#">
     /***
      * 请求验证码页面连接
      * */
@@ -492,12 +597,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     @Override
                     public void onSubscribe(Disposable d) {
-
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
                     }
 
                     @Override
@@ -548,7 +651,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 });
     }
+    //</editor-fold>
 
+
+    //<editor-fold desc="#权限申请#">
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         Log.i("eee","权限申请onRequestPermissionsResult");
@@ -577,6 +683,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initPermission() {
         String[] permissions = {
                 Manifest.permission.READ_PHONE_STATE
+                ,Manifest.permission.WRITE_EXTERNAL_STORAGE
         };
 
         ArrayList<String> toApplyList = new ArrayList<>();
@@ -593,6 +700,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     }
+    //</editor-fold>
 
 
 }

@@ -15,14 +15,11 @@
 
 
 
-
-    <com.youth.banner.Banner
-        android:id="@+id/banner"
+    <com.huashe.lockscreen.video.MVideoView
+        android:id="@+id/videoView_one"
         android:layout_weight="7.1"
         android:layout_width="0dp"
-        android:layout_height="match_parent">
-
-    </com.youth.banner.Banner>
+        android:layout_height="match_parent"/>
 
     <LinearLayout
         android:layout_width="0dp"
