@@ -127,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         makeQrCode();//生成二维码
         LoadViewFiles();
 
-
     }
 
 
@@ -183,13 +182,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if (Intent.ACTION_SCREEN_ON.equals(action)) {
                 Log.d(TAG, "screen on");
-                onStartActivity();
+                //   onStartActivity();
+                if(mVideoView!=null&&!mVideoView.isPlaying()){
+                    mVideoView.start();
+                }
                 isBlackScreen=false; //屏幕亮了
             }
             else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 Log.d(TAG, "screen off");
                 isBlackScreen=true; //屏幕熄灭了
-                onStartActivity();
+                // onStartActivity();
 
             }
             else if (Intent.ACTION_USER_PRESENT.equals(action)) {
@@ -227,10 +229,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.unlock_btn:
 
-                checkRequestCode();
-                //注释为测试时候使用
-//                isLock=false;
-//                moveTaskToBack(false);
+                //  checkRequestCode();
+                //注释为测试时候使用 TODO 去掉测试代码
+                isLock=false;
+                moveTaskToBack(false);
+                time.start();
 
                 break;
             default:
@@ -305,8 +308,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override  //这里对返回键进行屏蔽
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if(keyCode==KeyEvent.KEYCODE_HOME||keyCode==KeyEvent.KEYCODE_BACK){
+        if((keyCode==KeyEvent.KEYCODE_HOME||keyCode==KeyEvent.KEYCODE_BACK)&&isLock){
             return true;
+        }
+        else if(KeyEvent.KEYCODE_VOLUME_DOWN==keyCode||KeyEvent.KEYCODE_VOLUME_UP==keyCode){
+            return false;
+        }
+        else if(keyCode==KeyEvent.KEYCODE_DEL){
+            return false;
+        }
+        else{
+            moveTaskToBack(false);
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -336,8 +348,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     //<editor-fold desc="#操作询问#">
-    //TODO 这里设置掉起锁屏时间。
-    TimeCount time = new TimeCount(1*60 * 1000, 1000);
+
+
+    TimeCount time = new TimeCount(5*60* 1000, 1000);
 
     class TimeCount extends CountDownTimer {
 
@@ -375,14 +388,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public String howToChangeText(float interpolatedTime, float progressNum, float maxNum) {
                 //DecimalFormat decimalFormat=new DecimalFormat("0.00");
                 //  String s = decimalFormat.format(interpolatedTime * progressNum / maxNum * 100) + "%"; 这个是进度条百分比计数
-                int cf= 9-(int) Math.floor(interpolatedTime * 10);
+                int cf= 10-(int) Math.floor(interpolatedTime * 10);
+               // int cf=1- decimalFormat.format(interpolatedTime * progressNum / maxNum * 100);
                 if(cf==0){
                     dialog.dismiss();
-
                     if(!isLock){
                         //上锁请求告诉后台上锁了
                         updateUseRecords();
                         Log.i("eee","关闭dialog并上锁");
+                        time.cancel();
                     }
                     isLock=true;
                 }
@@ -397,7 +411,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dialog.addContentView(dialogView,params);
 
         dialog.setCancelable(false);
-        dialog.show();
+        if(!dialog.isShowing()){
+            dialog.show();
+        }
         Log.i("eee","执行了dialog");
         circleBarView.setProgressNum(100,10000);
 
@@ -415,6 +431,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
     }
+
     //</editor-fold>
 
     //<editor-fold desc="#视频加载控制#">
