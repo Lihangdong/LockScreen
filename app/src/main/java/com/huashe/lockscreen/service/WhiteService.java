@@ -18,7 +18,7 @@ import com.huashe.lockscreen.MainActivity;
 import com.huashe.lockscreen.R;
 
 /**
- * Description:
+ * Description:  这个是为了提高程序优先级，避免系统内存紧张是系统优先杀掉。
  * created by Jamil
  * Time: 2019/7/26
  **/
