@@ -10,4 +10,6 @@
     <color name="progress_color">#fe522d</color>
     <color name="blue">#65befd</color>
     <color name="gray">#afb1b3</color>
+    <color name="orange">#f46f09</color>
+    <color name="qblue">#6dadf9</color>
 </resources>

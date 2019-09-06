@@ -63,7 +63,7 @@ import io.reactivex.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     String TAG="eeeMainActivity";
-    Button LockScreenBtn,unlockBtn;
+    LinearLayout unlockBtn;
     EditText inputPassword_edt;
     LockUtil lockUtil;
     boolean isLock=true; //默认锁住了
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ImageView qrcodeImg;// 请求二维码
     String currentCode="currentCode";// 当前解锁使用的解锁码
     String IsGrant="isgrant";
-
+    ImageView blockImg;
     //视频使用属性
     List<String> videoList;
     MVideoView mVideoView;
@@ -137,13 +137,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         registerReceiver(mBatInfoReceiver, filter);
 
         //实例化控件
-        LockScreenBtn= findViewById(R.id.lockScreen_btn);
         unlockBtn= findViewById(R.id.unlock_btn);
         qrcodeImg =findViewById(R.id.qrcode_img);
+        blockImg=  findViewById(R.id.block_img);
 
         inputPassword_edt=findViewById(R.id.inputPassword_edt);
 
-        LockScreenBtn.setOnClickListener(this);
         unlockBtn.setOnClickListener(this);
 
         //锁屏管理器对象实例
@@ -178,11 +177,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onReceive(final Context context, final Intent intent) {
             String action = intent.getAction();
-            //   Log.i("eeeTestActivity","触发的Intent为："+action);
+            //   Log.i("eeeMainActivity","触发的Intent为："+action);
 
             if (Intent.ACTION_SCREEN_ON.equals(action)) {
                 Log.d(TAG, "screen on");
-                //   onStartActivity();
+                onStartActivity();
                 if(mVideoView!=null&&!mVideoView.isPlaying()){
                     mVideoView.start();
                 }
@@ -191,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 Log.d(TAG, "screen off");
                 isBlackScreen=true; //屏幕熄灭了
-                // onStartActivity();
+                onStartActivity();
 
             }
             else if (Intent.ACTION_USER_PRESENT.equals(action)) {
@@ -223,14 +222,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         switch (v.getId()){
-            case R.id.lockScreen_btn:
-                lockUtil.doLockScreen();
-                break;
+//            case R.id.lockScreen_btn:
+//                lockUtil.doLockScreen();
+//                break;
 
             case R.id.unlock_btn:
 
-                //  checkRequestCode();
+                // checkRequestCode();
                 //注释为测试时候使用 TODO 去掉测试代码
+                blockImg.setBackgroundResource(R.drawable.icon_jblock);
                 isLock=false;
                 moveTaskToBack(false);
                 time.cancel();
@@ -261,6 +261,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(mVideoView!=null&&!mVideoView.isPlaying()){
+            mVideoView.start();
+        }
+    }
 
     @Override
     protected void onPause() {
@@ -281,14 +288,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStop();
         if(mVideoView!=null){
             mVideoView.stopPlayback();
-            Log.i("eeeTestActivity","stopPlayback");
+            Log.i("eeeMainActivity","stopPlayback");
         }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Log.i("eeeTestActivity","onNewIntent");
+        Log.i("eeeMainActivity","onNewIntent");
         LoadViewFiles();
     }
 
@@ -351,7 +358,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //<editor-fold desc="#操作询问#">
 
 
-    TimeCount time = new TimeCount(5*60* 1000, 1000);
+    TimeCount time = new TimeCount(10*60* 1000, 1000);
 
     class TimeCount extends CountDownTimer {
 
@@ -390,7 +397,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //DecimalFormat decimalFormat=new DecimalFormat("0.00");
                 //  String s = decimalFormat.format(interpolatedTime * progressNum / maxNum * 100) + "%"; 这个是进度条百分比计数
                 int cf= 10-(int) Math.floor(interpolatedTime * 10);
-               // int cf=1- decimalFormat.format(interpolatedTime * progressNum / maxNum * 100);
+                // int cf=1- decimalFormat.format(interpolatedTime * progressNum / maxNum * 100);
                 if(cf==0){
                     dialog.dismiss();
                     if(!isLock){
@@ -400,6 +407,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         time.cancel();
                     }
                     isLock=true;
+                    blockImg.setBackgroundResource(R.drawable.icon_sblock);
                 }
                 return cf+"";
             }
@@ -600,6 +608,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 moveTaskToBack(false);
                                 Log.i(TAG,"解锁成功");
                                 inputPassword_edt.setText("");
+                                blockImg.setBackgroundResource(R.drawable.icon_jblock);
                                 time.cancel();
                                 time.start();
                                 SPUtils.put(MainActivity.this,currentCode,inputCode);
