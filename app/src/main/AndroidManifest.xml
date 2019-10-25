@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.huashe.lockscreen">
     <!-- 亮屏的权限 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- <user-permission android:name="android.permission.DEVICE_POWER"/> -->
     <uses-permission android:name="android.permission.USES_POLICY_FORCE_LOCK" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
@@ -41,12 +42,18 @@
             android:name=".MainActivity"
             android:label="锁屏ing"
             android:launchMode="singleTask"
+            android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+
+                <!--这里设置隐藏图标-->
+                <data android:host="mainactivity"
+                    android:scheme="com.huashe.lockscreen.mainactivity"/>
+
             </intent-filter>
         </activity>
 

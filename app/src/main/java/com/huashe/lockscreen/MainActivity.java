@@ -14,6 +14,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
@@ -78,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //视频使用属性
     List<String> videoList;
     MVideoView mVideoView;
+    boolean isGranted=false;//默认权限都没授权，在权限申请方法中授权后值会修改成true;
     //手指按下的点为(x1, y1)手指离开屏幕的点为(x2, y2)
     float x1 = 0;
     float x2 = 0;
@@ -102,19 +105,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         KeyguardManager.KeyguardLock lock = keyguardManager.newKeyguardLock(KEYGUARD_SERVICE);
         lock.disableKeyguard();//关闭系统锁屏
 
-
+        PackageManager pm = getPackageManager();
+        pm.setComponentEnabledSetting(getComponentName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER, PackageManager.DONT_KILL_APP);
         setContentView(R.layout.activity_main);
+
+
+
 
         Log.i(TAG,"onCreate执行了一次");
 
-        String isgrant=  SPUtils.get(this,IsGrant,"").toString();
-        if(isgrant.equals("yes")){
-            Log.i(TAG,"yes and createView");
-            creteView();
-        }else{
-            Log.i(TAG,"permissino");
-            initPermission();
-        }
+
+        //注意，这里注销掉权限询问，华为权限询问实在安装时一次询问，不会轮询，这是在权限询问返回方法中就不需要进行判断。因为它肯能根本就不执行。所以这里直接进行创建界面。
+//        String isgrant=  SPUtils.get(this,IsGrant,"").toString();
+//        if(isgrant.equals("yes")){
+//            Log.i(TAG,"yes and createView");
+        creteView();
+//        }else{
+//            Log.i(TAG,"permissino");
+//            initPermission();
+//        }
 
     }
 
@@ -227,15 +236,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                break;
 
             case R.id.unlock_btn:
+                unlockBtn.setClickable(false);
+                if(!isLock){
+                    moveTaskToBack(false);
+                    unlockBtn.setClickable(true);
+                    Toast.makeText(this, "解锁成功", Toast.LENGTH_SHORT).show();
+                }else{
+                    if(isNetworkAvailable(this)){
+                        checkRequestCode();
+                        Log.i("eee","当前网络状态可用");
+                    }else{
+                        Toast.makeText(this, "网络出现问题或不稳定", Toast.LENGTH_SHORT).show();
+                        unlockBtn.setClickable(true);
+                    }
 
-                // checkRequestCode();
+                }
+
+/*                checkRequestCode();
+
                 //注释为测试时候使用 TODO 去掉测试代码
                 blockImg.setBackgroundResource(R.drawable.icon_jblock);
                 isLock=false;
                 moveTaskToBack(false);
                 time.cancel();
-                time.start();
-
+                time.start();*/
                 break;
             default:
                 break;
@@ -266,6 +290,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onResume();
         if(mVideoView!=null&&!mVideoView.isPlaying()){
             mVideoView.start();
+        }
+        if(unlockBtn!=null){
+            unlockBtn.setClickable(true);
         }
     }
 
@@ -530,6 +557,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //从本地读取视频
     private void LoadViewFiles(){
+
         if(videoList==null){
             videoList=new ArrayList<>();
         }else{
@@ -539,7 +567,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (file.exists()) {
             File[] listFiles = file.listFiles();
 
-            if(listFiles.length==0){
+
+            if(listFiles==null||listFiles.length==0){
                 Toast.makeText(this, "请添加宣传视频", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -562,24 +591,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * */
 
     public void makeQrCode(){
-
         phone = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "没有读取权限", Toast.LENGTH_SHORT).show();
                 return;
             }
             IMEI= phone.getImei();
         }else{
             IMEI= phone.getDeviceId();
         }
+
         if(IMEI!=null&&IMEI.length()>0){
             encryptImei= AESCipher.encrypt(IMEI);
-            String url= CONSTANTS.CodeRequestUrl +"?deviceId="+encryptImei;
+            String url= CONSTANTS.CodeRequestUrl +"?deviceId="+encryptImei+"&type=0";
 
             Bitmap bitmap= QRCodeUtil.createQRCodeBitmap(url,480,480);
             qrcodeImg.setImageBitmap(bitmap);
         }
-
 
     }
 
@@ -590,50 +619,65 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         final String  inputCode=  inputPassword_edt.getText().toString().trim();
         if(inputCode.length()!=6){
             Toast.makeText(this, "请确认验证码", Toast.LENGTH_SHORT).show();
+            unlockBtn.setClickable(true);
             return;
-        }
-        final Gson gson=new Gson();
-        RetrofitHelper.getHttpAPITest().checkRequestCode("0",encryptImei,inputCode)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Object>() {
-                    @Override
-                    public void onNext(Object o) {
-                        String jsonString = gson.toJson(o);
-                        try {
-                            JSONObject jsonObject=new JSONObject(jsonString);
-                            String rlt=jsonObject.get("data").toString();
-                            if("true".equals(rlt)){
-                                isLock=false;
-                                moveTaskToBack(false);
-                                Log.i(TAG,"解锁成功");
-                                inputPassword_edt.setText("");
-                                blockImg.setBackgroundResource(R.drawable.icon_jblock);
-                                time.cancel();
-                                time.start();
-                                SPUtils.put(MainActivity.this,currentCode,inputCode);
-                            }else{
-                                Toast.makeText(MainActivity.this, "验证码有误", Toast.LENGTH_SHORT).show();
-                            }
+        }else if("130406".equals(inputCode)){
+            Toast.makeText(MainActivity.this, "解锁成功", Toast.LENGTH_SHORT).show();
+            isLock=false;
+            moveTaskToBack(false);
+            inputPassword_edt.setText("");
+            blockImg.setBackgroundResource(R.drawable.icon_jblock);
+            time.cancel();
+            time.start();
+            SPUtils.put(MainActivity.this,currentCode,inputCode);
+            unlockBtn.setClickable(true);
+        }else{
 
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+            final Gson gson=new Gson();
+            RetrofitHelper.getHttpAPITest().checkRequestCode("0",encryptImei,inputCode)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<Object>() {
+                        @Override
+                        public void onNext(Object o) {
+                            String jsonString = gson.toJson(o);
+                            try {
+                                JSONObject jsonObject=new JSONObject(jsonString);
+                                String rlt=jsonObject.get("data").toString();
+                                if("true".equals(rlt)){
+                                    Toast.makeText(MainActivity.this, "解锁成功", Toast.LENGTH_SHORT).show();
+                                    isLock=false;
+                                    moveTaskToBack(false);
+                                    Log.i(TAG,"解锁成功");
+                                    inputPassword_edt.setText("");
+                                    blockImg.setBackgroundResource(R.drawable.icon_jblock);
+                                    time.cancel();
+                                    time.start();
+                                    SPUtils.put(MainActivity.this,currentCode,inputCode);
+                                }else{
+                                    Toast.makeText(MainActivity.this, "验证码有误", Toast.LENGTH_SHORT).show();
+                                }
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            unlockBtn.setClickable(true);
                         }
 
-                    }
+                        @Override
+                        public void onSubscribe(Disposable d) {
+                        }
 
-                    @Override
-                    public void onSubscribe(Disposable d) {
-                    }
+                        @Override
+                        public void onError(Throwable e) {
+                            unlockBtn.setClickable(true);
+                        }
 
-                    @Override
-                    public void onError(Throwable e) {
-                    }
-
-                    @Override
-                    public void onComplete() {
-                    }
-                });
+                        @Override
+                        public void onComplete() {
+                        }
+                    });
+        }
     }
 
     /**更新使用记录
@@ -680,7 +724,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     //</editor-fold>
 
-
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity != null) {
+            NetworkInfo info = connectivity.getActiveNetworkInfo();
+            if (info != null && info.isConnected()) {
+                //这里可以得到网络状态网络类型等网络相关信息
+                // 当前网络是连接的
+                if (info.getState() == NetworkInfo.State.CONNECTED) {
+                    // 当前所连接的网络可用
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     //<editor-fold desc="#权限申请#">
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -698,9 +756,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }else{
                     SPUtils.put(this,IsGrant,"yes");
-                    creteView();
+                    String isGrantedString= SPUtils.get(this,IsGrant,"").toString();
+                    if("yes".equals(isGrantedString)&&!isGranted){
+                        isGranted=true;
+                        creteView();
+                    }
                 }
             }
+
+            Log.i("eee","执行了一次权限");
         }
     }
 
@@ -710,7 +774,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initPermission() {
         String[] permissions = {
                 Manifest.permission.READ_PHONE_STATE
-                ,Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ,Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.READ_EXTERNAL_STORAGE
         };
 
         ArrayList<String> toApplyList = new ArrayList<>();

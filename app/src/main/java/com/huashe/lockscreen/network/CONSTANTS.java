@@ -15,13 +15,13 @@ public class CONSTANTS {
 
       // public final static String BaseUrl="http://192.168.12.52:8080/";
 
-      public final static String BaseUrl="http://192.168.12.52:8080/jeeplus_ccds/sms/";
+      public final static String BaseUrl="http://111.61.180.198:9090/jeeplus_hd/sms/";
 
 
 
 
 
-      public final static String CodeRequestUrl="http://192.168.12.52:8080/confirm.html";
+      public final static String CodeRequestUrl="http://111.61.180.198:9090/jeeplus_hd/jack/gotoOnOffConfirm";
 
 
 
